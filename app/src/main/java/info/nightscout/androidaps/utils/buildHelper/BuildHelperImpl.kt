@@ -19,6 +19,9 @@ class BuildHelperImpl constructor(
 
         engineeringMode = engineeringModeSemaphore.exists() && engineeringModeSemaphore.isFile
         devBranch = BuildConfig.VERSION.contains("-") || BuildConfig.VERSION.matches(Regex(".*[a-zA-Z]+.*"))
+        if (BuildConfig.VERSION.uppercase().contains("-OH")) {
+            devBranch = false
+        }
     }
 
     override fun isEngineeringModeOrRelease(): Boolean =
