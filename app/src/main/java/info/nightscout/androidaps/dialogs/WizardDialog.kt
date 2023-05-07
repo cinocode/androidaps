@@ -316,6 +316,9 @@ class WizardDialog : DaggerDialogFragment() {
         sp.putBoolean(R.string.key_wizard_include_cob, binding.cobCheckbox.isChecked)
         sp.putBoolean(R.string.key_wizard_include_trend_bg, binding.bgTrendCheckbox.isChecked)
         sp.putBoolean(R.string.key_wizard_correction_percent, binding.correctionPercent.isChecked)
+        if (binding.ttCheckbox.isEnabled) {
+            sp.putBoolean(R.string.key_wizard_temp_target_used, binding.ttCheckbox.isChecked)
+        }
     }
 
     private fun loadCheckedStates() {
@@ -323,6 +326,9 @@ class WizardDialog : DaggerDialogFragment() {
         binding.cobCheckbox.isChecked = sp.getBoolean(R.string.key_wizard_include_cob, false)
         usePercentage = sp.getBoolean(R.string.key_wizard_correction_percent, false)
         binding.correctionPercent.isChecked = usePercentage
+        if (binding.ttCheckbox.isEnabled) {
+            binding.ttCheckbox.isChecked = sp.getBoolean(R.string.key_wizard_temp_target_used, false)
+        }
     }
 
     private fun valueToUnitsToString(value: Double, units: String): String =
