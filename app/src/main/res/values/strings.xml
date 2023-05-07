@@ -644,6 +644,9 @@
     <string name="key_carbs_button_increment_2" translatable="false">carbs_button_increment_2</string>
     <string name="key_carbs_button_increment_3" translatable="false">carbs_button_increment_3</string>
     <string name="carb_increment_button_message">Number of carbs to add when button is pressed</string>
+    <string name="key_carbs_default_time_offset" translatable="false">carbs_default_time_offset</string>
+    <string name="config_carbs_default_time_offset_title">Carb time offset default</string>
+    <string name="config_carbs_default_time_offset_message">Default value for time offset in carbs dialog (input all carbs delayed by x minutes)</string>
     <string name="insulin_increment_button_message">Amount of insulin to add when button is pressed</string>
     <string name="error_starting_cgm">Could not launch CGM application.  Make sure it is installed.</string>
     <string name="overview_cgm">CGM</string>

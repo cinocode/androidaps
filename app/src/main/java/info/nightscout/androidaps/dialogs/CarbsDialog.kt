@@ -176,6 +176,10 @@ class CarbsDialog : DialogFragmentWithDate() {
             binding.carbs.announceValue()
         }
 
+        val timeOffsetConfig = sp.getInt(R.string.key_carbs_default_time_offset, 0)
+        if (timeOffsetConfig > 0) {
+            binding.time.value = timeOffsetConfig.toDouble()
+        }
         setOnValueChangedListener { eventTime: Long ->
             run {
                 val timeOffset = ((eventTime - eventTimeOriginal) / (1000 * 60)).toDouble()
