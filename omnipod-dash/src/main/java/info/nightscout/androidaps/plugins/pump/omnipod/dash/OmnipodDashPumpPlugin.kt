@@ -1,9 +1,11 @@
 package info.nightscout.androidaps.plugins.pump.omnipod.dash
 
+import android.app.NotificationManager
 import android.content.Context
 import android.os.Handler
 import android.os.HandlerThread
 import android.text.format.DateFormat
+import androidx.core.app.NotificationCompat
 import dagger.android.HasAndroidInjector
 import info.nightscout.androidaps.activities.ErrorHelperActivity.Companion.runAlarm
 import info.nightscout.androidaps.data.DetailedBolusInfo
@@ -41,6 +43,7 @@ import info.nightscout.androidaps.plugins.pump.omnipod.dash.history.data.TempBas
 import info.nightscout.androidaps.plugins.pump.omnipod.dash.ui.OmnipodDashOverviewFragment
 import info.nightscout.androidaps.plugins.pump.omnipod.dash.util.Constants
 import info.nightscout.androidaps.plugins.pump.omnipod.dash.util.mapProfileToBasalProgram
+import info.nightscout.androidaps.queue.Callback
 import info.nightscout.androidaps.queue.commands.Command
 import info.nightscout.androidaps.queue.commands.CustomCommand
 import info.nightscout.androidaps.utils.DateUtil
@@ -93,8 +96,11 @@ class OmnipodDashPumpPlugin @Inject constructor(
     private val handler = Handler(HandlerThread(this::class.simpleName + "Handler").also { it.start() }.looper)
     private lateinit var statusChecker: Runnable
     private var nextPodWarningCheck: Long = 0
+    private var nextPodRegularRefresh: Long = 0
     @Volatile var stopConnecting: CountDownLatch? = null
     private var disposables: CompositeDisposable = CompositeDisposable()
+
+    private val DASH_ALERT_NOTIF_CHAN = "AndroidAPS-Dash"
 
     companion object {
 
@@ -195,12 +201,94 @@ class OmnipodDashPumpPlugin @Inject constructor(
 
     private fun refreshStatusOnUnacknowledgedCommands() {
         if (podStateManager.isPodRunning &&
-            podStateManager.activeCommand != null &&
             commandQueue.size() == 0 &&
             commandQueue.performing() == null
         ) {
-            commandQueue.readStatus(rh.gs(R.string.unconfirmed_command), null)
+            if (podStateManager.activeCommand != null) {
+                this.readStatus(rh.gs(R.string.unconfirmed_command), null)
+            } else if (System.currentTimeMillis() > nextPodRegularRefresh) {
+                this.readStatus(rh.gs(R.string.requested_15min_cron), null)
+            }
         }
+    }
+
+    fun readStatus(reason: String, callback: Callback?) {
+        commandQueue.readStatus(reason, object : Callback() {
+            override fun run() {
+                if (result.success) {
+                    nextPodRegularRefresh = DateTimeUtil.getTimeInFutureFromMinutes(15)
+                    checkForAlertsToDismiss()
+                }
+
+                callback?.result(result)?.run()
+            }
+        })
+
+    }
+
+    private fun isAutoDeacDebugOn(): Boolean {
+        return sp.getBoolean(R.string.key_omnipod_dash_preferences_deactivation_debug, false)
+    }
+
+    private fun isAutoAlertDismissalOn(): Boolean {
+        return sp.getBoolean(R.string.key_omnipod_dash_preferences_deactivation_auto_dismiss, false)
+    }
+
+    private fun checkForAlertsToDismiss() {
+        if (
+            isAutoAlertDismissalOn()
+            && podStateManager.isPodRunning
+            && podStateManager.activeAlerts!!.size > 0
+            && !commandQueue.isCustomCommandInQueue(CommandSilenceAlerts::class.java)
+        ) {
+            val message = podStateManager.activeAlerts?.let { it ->
+                it.joinToString(System.lineSeparator()) { t -> translatedActiveAlert(t) }
+            } ?: return
+
+            if (isAutoDeacDebugOn()) {
+                this.notificationHandler("Would silence alert for: '${message}'.", "DEBUG Dash Alert")
+            } else {
+                this.executeCustomCommand(CommandSilenceAlerts())
+                this.notificationHandler(message)
+            }
+        }
+    }
+
+    fun translatedActiveAlert(alert: AlertType): String {
+        val id = when (alert) {
+            AlertType.LOW_RESERVOIR       ->
+                R.string.omnipod_common_alert_low_reservoir
+            AlertType.EXPIRATION          ->
+                R.string.omnipod_common_alert_expiration_advisory
+            AlertType.EXPIRATION_IMMINENT ->
+                R.string.omnipod_common_alert_expiration
+            AlertType.USER_SET_EXPIRATION ->
+                R.string.omnipod_common_alert_expiration_advisory
+            AlertType.AUTO_OFF            ->
+                R.string.omnipod_common_alert_shutdown_imminent
+            AlertType.SUSPEND_IN_PROGRESS ->
+                R.string.omnipod_common_alert_delivery_suspended
+            AlertType.SUSPEND_ENDED       ->
+                R.string.omnipod_common_alert_delivery_suspended
+            else                          ->
+                R.string.omnipod_common_alert_unknown_alert
+        }
+        return rh.gs(id)
+    }
+
+    private fun notificationHandler(text: String, title: String = "Dash Alert") {
+        val builder = NotificationCompat.Builder(context, DASH_ALERT_NOTIF_CHAN)
+        builder
+            .setSmallIcon(R.drawable.ic_pod_128)
+            .setContentTitle(title)
+            .setContentText(text)
+            .setPriority(Notification.IMPORTANCE_HIGH)
+            .setCategory(Notification.CATEGORY_ALARM)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .setVibrate(longArrayOf(0, 100, 50, 100, 50))
+
+        val mNotificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        mNotificationManager.notify(info.nightscout.androidaps.Constants.omnipodDashNotificationID, builder.build())
     }
 
     override fun isInitialized(): Boolean {

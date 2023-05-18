@@ -133,7 +133,7 @@ class OmnipodDashOverviewFragment : DaggerFragment() {
 
         buttonBinding.buttonRefreshStatus.setOnClickListener {
             disablePodActionButtons()
-            commandQueue.readStatus(
+            omnipodDashPumpPlugin.readStatus(
                 rh.gs(R.string.requested_by_user),
                 DisplayResultDialogCallback(
                     rh.gs(R.string.omnipod_common_error_failed_to_refresh_status),
@@ -444,27 +444,7 @@ class OmnipodDashOverviewFragment : DaggerFragment() {
         }
     }
 
-    private fun translatedActiveAlert(alert: AlertType): String {
-        val id = when (alert) {
-            AlertType.LOW_RESERVOIR       ->
-                R.string.omnipod_common_alert_low_reservoir
-            AlertType.EXPIRATION          ->
-                R.string.omnipod_common_alert_expiration_advisory
-            AlertType.EXPIRATION_IMMINENT ->
-                R.string.omnipod_common_alert_expiration
-            AlertType.USER_SET_EXPIRATION ->
-                R.string.omnipod_common_alert_expiration_advisory
-            AlertType.AUTO_OFF            ->
-                R.string.omnipod_common_alert_shutdown_imminent
-            AlertType.SUSPEND_IN_PROGRESS ->
-                R.string.omnipod_common_alert_delivery_suspended
-            AlertType.SUSPEND_ENDED       ->
-                R.string.omnipod_common_alert_delivery_suspended
-            else                          ->
-                R.string.omnipod_common_alert_unknown_alert
-        }
-        return rh.gs(id)
-    }
+    private fun translatedActiveAlert(alert: AlertType) = this.omnipodDashPumpPlugin.translatedActiveAlert(alert)
 
     private fun updateLastConnection() {
         if (podStateManager.isUniqueIdSet) {
@@ -642,6 +622,7 @@ class OmnipodDashOverviewFragment : DaggerFragment() {
     }
 
     private fun updateSilenceAlertsButton() {
+        // TODO unify
         if (!isAutomaticallySilenceAlertsEnabled() &&
             podStateManager.isPodRunning &&
             (
