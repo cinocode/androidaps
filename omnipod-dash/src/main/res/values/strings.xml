@@ -35,6 +35,27 @@
     <string name="key_omnipod_common_notification_delivery_suspended_sound_enabled" translatable="false">AAPS.Omnipod.notification_delivery_suspended_sound_enabled</string>
     <string name="omnipod_common_preferences_notification_delivery_suspended_sound_enabled">Sound when delivery suspended notification enabled</string>
 
+    <!-- Omnipod Dash - Auto Deactivation -->
+    <string name="key_omnipod_dash_preferences_category_deactivation_settings" translatable="false">key_omnipod_dash_preferences_category_deactivation_settings</string>
+    <string name="key_omnipod_dash_preferences_deactivation_debug" translatable="false">key_omnipod_dash_preferences_deactivation_debug</string>
+    <string name="key_omnipod_dash_preferences_deactivation_poll_time" translatable="false">key_omnipod_dash_preferences_deactivation_poll_time</string>
+    <string name="key_omnipod_dash_preferences_deactivation_auto_dismiss" translatable="false">key_omnipod_dash_preferences_deactivation_auto_dismiss</string>
+    <string name="key_omnipod_dash_preferences_deactivation_auto_hunt_warning" translatable="false">key_omnipod_dash_preferences_deactivation_auto_hunt_warning</string>
+    <string name="key_omnipod_dash_preferences_deactivation_auto_deactivate_pod" translatable="false">key_omnipod_dash_preferences_deactivation_auto_deactivate_pod</string>
+    <string name="key_omnipod_dash_preferences_deactivation_auto_deactivate_pod_minutes" translatable="false">key_omnipod_dash_preferences_deactivation_auto_deactivate_pod_minutes</string>
+    <string name="omnipod_dash_preferences_category_deactivation">Auto Deactivation</string>
+    <string name="omnipod_dash_preferences_deactivation_debug">Debug</string>
+    <string name="omnipod_dash_preferences_deactivation_debug_summary">Do nothing automatically - send verbose information via notifications explaining this sections behaviour.</string>
+    <string name="omnipod_dash_preferences_deactivation_debug_poll_time">Poll time</string>
+    <string name="omnipod_dash_preferences_deactivation_debug_poll_time_summary">How often to poll for pending alerts or deactivation in ms</string>
+    <string name="omnipod_dash_preferences_deactivation_auto_dismiss">Auto dismiss deactivation alerts</string>
+    <string name="omnipod_dash_preferences_deactivation_auto_dismiss_summary">If there is a pod alert, dismiss it on the next regular pump connect and convert it to a notification.</string>
+    <string name="omnipod_dash_preferences_deactivation_auto_hunt_warning">Poll for deactivation warnings</string>
+    <string name="omnipod_dash_preferences_deactivation_auto_hunt_warning_summary">Aggressively poll for any pod alerts 8 hours and 1 hour before forced pod deactivation in order to try to dismiss it.</string>
+    <string name="omnipod_dash_preferences_deactivation_auto_deactivate_pod">Auto deactivate</string>
+    <string name="omnipod_dash_preferences_deactivation_auto_deactivate_pod_minutes">Auto deactivation time before expiration</string>
+    <string name="omnipod_dash_preferences_deactivation_auto_deactivate_pod_minutes_summary">Stop the pod this number in minutes before it is forced to deactivate after 80 hours running.</string>
+
     <!-- Exceptions -->
     <string name="omnipod_dash_failed_to_connect">Failed to connect to pod</string>
     <string name="omnipod_dash_found_too_many_pods">Found too many pods for activation</string>

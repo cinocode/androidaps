@@ -99,4 +99,61 @@
             android:title="@string/omnipod_common_preferences_notification_delivery_suspended_sound_enabled" />
 
     </PreferenceCategory>
+
+    <PreferenceCategory
+        android:key="@string/key_omnipod_dash_preferences_category_deactivation_settings"
+        android:title="@string/omnipod_dash_preferences_category_deactivation"
+        app:initialExpandedChildrenCount="0">
+
+        <SwitchPreference
+            android:defaultValue="false"
+            android:key="@string/key_omnipod_dash_preferences_deactivation_debug"
+            android:summary="@string/omnipod_dash_preferences_deactivation_debug_summary"
+            android:title="@string/omnipod_dash_preferences_deactivation_debug" />
+
+        <info.nightscout.androidaps.utils.textValidator.ValidatingEditTextPreference
+            android:defaultValue="250"
+            android:dialogMessage="@string/omnipod_dash_preferences_deactivation_debug_poll_time_summary"
+            android:inputType="numberSigned"
+            android:key="@string/key_omnipod_dash_preferences_deactivation_poll_time"
+            android:maxLines="20"
+            android:selectAllOnFocus="true"
+            android:singleLine="true"
+            android:title="@string/omnipod_dash_preferences_deactivation_debug_poll_time"
+            validate:maxNumber="5000"
+            validate:minNumber="50"
+            validate:testType="numericRange" />
+
+        <SwitchPreference
+            android:defaultValue="false"
+            android:key="@string/key_omnipod_dash_preferences_deactivation_auto_dismiss"
+            android:summary="@string/omnipod_dash_preferences_deactivation_auto_dismiss_summary"
+            android:title="@string/omnipod_dash_preferences_deactivation_auto_dismiss" />
+
+        <SwitchPreference
+            android:defaultValue="false"
+            android:key="@string/key_omnipod_dash_preferences_deactivation_auto_hunt_warning"
+            android:summary="@string/omnipod_dash_preferences_deactivation_auto_hunt_warning_summary"
+            android:title="@string/omnipod_dash_preferences_deactivation_auto_hunt_warning" />
+
+        <SwitchPreference
+            android:defaultValue="false"
+            android:key="@string/key_omnipod_dash_preferences_deactivation_auto_deactivate_pod"
+            android:title="@string/omnipod_dash_preferences_deactivation_auto_deactivate_pod" />
+
+        <info.nightscout.androidaps.utils.textValidator.ValidatingEditTextPreference
+            android:defaultValue="3"
+            android:dependency="@string/key_omnipod_dash_preferences_deactivation_auto_deactivate_pod"
+            android:dialogMessage="@string/omnipod_dash_preferences_deactivation_auto_deactivate_pod_minutes_summary"
+            android:inputType="numberSigned"
+            android:key="@string/key_omnipod_dash_preferences_deactivation_auto_deactivate_pod_minutes"
+            android:maxLines="20"
+            android:selectAllOnFocus="true"
+            android:singleLine="true"
+            android:title="@string/omnipod_dash_preferences_deactivation_auto_deactivate_pod_minutes"
+            validate:maxNumber="30"
+            validate:minNumber="1"
+            validate:testType="numericRange" />
+
+    </PreferenceCategory>
 </androidx.preference.PreferenceScreen>
