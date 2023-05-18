@@ -163,6 +163,24 @@
             <info.nightscout.androidaps.utils.textValidator.ValidatingEditTextPreference
                 android:defaultValue="0"
                 android:inputType="number"
+                android:key="@string/key_tt_dialog_duration"
+                android:title="@string/tt_dialog_duration"
+                validate:maxNumber="120"
+                validate:minNumber="15"
+                validate:testType="numericRange" />
+
+            <info.nightscout.androidaps.utils.textValidator.ValidatingEditTextPreference
+                android:defaultValue="0"
+                android:inputType="numberDecimal"
+                android:key="@string/key_tt_dialog_target"
+                android:title="@string/tt_dialog_target"
+                validate:floatmaxNumber="180.0"
+                validate:floatminNumber="4.0"
+                validate:testType="floatNumericRange" />
+
+            <info.nightscout.androidaps.utils.textValidator.ValidatingEditTextPreference
+                android:defaultValue="0"
+                android:inputType="number"
                 android:key="@string/key_eatingsoon_duration"
                 android:title="@string/eatingsoon_duration"
                 validate:maxNumber="120"

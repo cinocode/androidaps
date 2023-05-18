@@ -545,6 +545,10 @@
     <string name="careportal_newnstreatment_percentage_label">Percentage</string>
     <string name="careportal_newnstreatment_timeshift_label">Time shift</string>
     <string name="default_temptargets">Default Temp-Targets</string>
+    <string name="key_tt_dialog_duration" translatable="false">key_tt_dialog_duration</string>
+    <string name="key_tt_dialog_target" translatable="false">key_tt_dialog_target</string>
+    <string name="tt_dialog_duration">temp dialog duration</string>
+    <string name="tt_dialog_target">temp dialog target</string>
     <string name="eatingsoon_duration">eatingsoon duration</string>
     <string name="eatingsoon_target">eatingsoon target</string>
     <string name="activity_duration">activity duration</string>

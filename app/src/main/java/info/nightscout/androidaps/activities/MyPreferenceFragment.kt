@@ -287,6 +287,7 @@ class MyPreferenceFragment : PreferenceFragmentCompat(), OnSharedPreferenceChang
     }
 
     private fun adjustUnitDependentPrefs(pref: Preference) { // convert preferences values to current units
+        // TODO my custom target
         val unitDependent = arrayOf(
             rh.gs(R.string.key_hypo_target),
             rh.gs(R.string.key_activity_target),
