@@ -45,7 +45,7 @@ class IsfProfileGraph : GraphView {
         gridLabelRenderer.verticalLabelsColor = isfSeries.color
 
         val nf: NumberFormat = NumberFormat.getInstance()
-        nf.maximumFractionDigits = 1
+        nf.maximumFractionDigits = 0
         gridLabelRenderer.labelFormatter = DefaultLabelFormatter(nf, nf)
     }
 
@@ -93,7 +93,7 @@ class IsfProfileGraph : GraphView {
         gridLabelRenderer.numHorizontalLabels = 13
 
         val nf: NumberFormat = NumberFormat.getInstance()
-        nf.maximumFractionDigits = 1
+        nf.maximumFractionDigits = 0
         gridLabelRenderer.labelFormatter = DefaultLabelFormatter(nf, nf)
     }
 }
