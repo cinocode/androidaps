@@ -1,5 +1,7 @@
 package info.nightscout.androidaps.plugins.pump.omnipod.dash
 
+import android.annotation.SuppressLint
+import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
 import android.os.Handler
@@ -100,14 +102,13 @@ class OmnipodDashPumpPlugin @Inject constructor(
     @Volatile var stopConnecting: CountDownLatch? = null
     private var disposables: CompositeDisposable = CompositeDisposable()
 
-    private val DASH_ALERT_NOTIF_CHAN = "AndroidAPS-Dash"
-
     companion object {
 
         private const val BOLUS_RETRY_INTERVAL_MS = 2000.toLong()
         private const val BOLUS_RETRIES = 5 // number of retries for cancel/get bolus status
         private const val STATUS_CHECK_INTERVAL_MS = (60L * 1000)
         private const val RESERVOIR_OVER_50_UNITS_DEFAULT = 75.0
+        private const val DASH_ALERT_NOTIF_CHAN = "AndroidAPS-Dash"
 
         private val pluginDescription = PluginDescription()
             .mainType(PluginType.PUMP)
@@ -206,8 +207,8 @@ class OmnipodDashPumpPlugin @Inject constructor(
         ) {
             if (podStateManager.activeCommand != null) {
                 this.readStatus(rh.gs(R.string.unconfirmed_command), null)
-            } else if (System.currentTimeMillis() > nextPodRegularRefresh) {
-                this.readStatus(rh.gs(R.string.requested_15min_cron), null)
+            // } else if (System.currentTimeMillis() > nextPodRegularRefresh) { TODO does this help any?
+                // this.readStatus(rh.gs(R.string.requested_15min_cron), null)
             }
         }
     }
@@ -239,14 +240,16 @@ class OmnipodDashPumpPlugin @Inject constructor(
             isAutoAlertDismissalOn()
             && podStateManager.isPodRunning
             && podStateManager.activeAlerts!!.size > 0
-            && !commandQueue.isCustomCommandInQueue(CommandSilenceAlerts::class.java)
+            // && !commandQueue.isCustomCommandInQueue(CommandSilenceAlerts::class.java) TODO no need?
         ) {
             val message = podStateManager.activeAlerts?.let { it ->
                 it.joinToString(System.lineSeparator()) { t -> translatedActiveAlert(t) }
             } ?: return
 
             if (isAutoDeacDebugOn()) {
-                this.notificationHandler("Would silence alert for: '${message}'.", "DEBUG Dash Alert")
+                val bool = commandQueue.isCustomCommandInQueue(CommandSilenceAlerts::class.java)
+                val extra = if (bool) "(command silence in queue)" else "(command silence not in queue)"
+                this.notificationHandler("Would silence alert for: '${message}' ${extra}.", "DEBUG Dash Alert")
             } else {
                 this.executeCustomCommand(CommandSilenceAlerts())
                 this.notificationHandler(message)
@@ -274,6 +277,16 @@ class OmnipodDashPumpPlugin @Inject constructor(
                 R.string.omnipod_common_alert_unknown_alert
         }
         return rh.gs(id)
+    }
+
+    private fun createNotificationChannel() {
+        val mNotificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        @SuppressLint("WrongConstant") val channel = NotificationChannel(
+            DASH_ALERT_NOTIF_CHAN,
+            DASH_ALERT_NOTIF_CHAN,
+            NotificationManager.IMPORTANCE_HIGH
+        )
+        mNotificationManager.createNotificationChannel(channel)
     }
 
     private fun notificationHandler(text: String, title: String = "Dash Alert") {
@@ -544,6 +557,7 @@ class OmnipodDashPumpPlugin @Inject constructor(
 
     override fun onStart() {
         super.onStart()
+        createNotificationChannel()
         podStateManager.onStart()
         handler.postDelayed(statusChecker, STATUS_CHECK_INTERVAL_MS)
         disposables += rxBus
