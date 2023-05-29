@@ -528,7 +528,7 @@
     <string name="clicked_refresh" comment="26 characters max for translation">Clicked refresh</string>
     <string name="scheduled_status_refresh" comment="26 characters max for translation">Scheduled Status Refresh</string>
     <string name="unconfirmed_command" comment="26 characters max for translation">Unconfirmed command</string>
-    <string name="requested_15min_cron" comment="26 characters max for translation">15 min cron</string>
+    <string name="requested_by_dash_deac" comment="26 characters max for translation">Alert Check</string>
     <string name="requested_by_user" comment="26 characters max for translation">Requested by user</string>
     <string name="user_request" comment="26 characters max for translation">User request</string>
     <string name="bolus_ok" comment="26 characters max for translation">Bolus OK</string>

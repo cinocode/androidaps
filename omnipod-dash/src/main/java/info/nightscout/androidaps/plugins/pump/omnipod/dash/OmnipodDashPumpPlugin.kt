@@ -64,6 +64,7 @@ import io.reactivex.rxjava3.disposables.CompositeDisposable
 import io.reactivex.rxjava3.kotlin.plusAssign
 import org.json.JSONObject
 import java.time.Duration
+import java.time.LocalDateTime
 import java.time.ZonedDateTime
 import java.util.*
 import java.util.concurrent.CountDownLatch
@@ -92,11 +93,16 @@ class OmnipodDashPumpPlugin @Inject constructor(
     commandQueue: CommandQueue
 ) : PumpPluginBase(pluginDescription, injector, aapsLogger, rh, commandQueue), Pump {
 
+    private enum class AutoDeacMode { IDLE, EXPIRY_POLLING, EXPIRY_DISMISSUNG, PRE_DEAC, FORCED_DEAC }
+
     @Volatile var bolusCanceled = false
     @Volatile var bolusDeliveryInProgress = false
 
     private val handler = Handler(HandlerThread(this::class.simpleName + "Handler").also { it.start() }.looper)
     private lateinit var statusChecker: Runnable
+    private var autoDeacChecker: Runnable
+    private var autoDeacMode = AutoDeacMode.IDLE
+    private var lastDismissedPodWarning: LocalDateTime = LocalDateTime.now().minusMinutes(5)
     private var nextPodWarningCheck: Long = 0
     private var nextPodRegularRefresh: Long = 0
     @Volatile var stopConnecting: CountDownLatch? = null
@@ -109,6 +115,7 @@ class OmnipodDashPumpPlugin @Inject constructor(
         private const val STATUS_CHECK_INTERVAL_MS = (60L * 1000)
         private const val RESERVOIR_OVER_50_UNITS_DEFAULT = 75.0
         private const val DASH_ALERT_NOTIF_CHAN = "AndroidAPS-Dash"
+        private const val DASH_ONG_NOTIF_CHAN = "AndroidAPS-Expiration"
 
         private val pluginDescription = PluginDescription()
             .mainType(PluginType.PUMP)
@@ -126,6 +133,7 @@ class OmnipodDashPumpPlugin @Inject constructor(
         statusChecker = Runnable {
             refreshStatusOnUnacknowledgedCommands()
             updatePodWarnings()
+            scheduleAutoDeac()
             aapsLogger.info(LTag.PUMP, "statusChecker")
 
             try {
@@ -136,6 +144,10 @@ class OmnipodDashPumpPlugin @Inject constructor(
                 aapsLogger.warn(LTag.PUMP, "Error on createFakeTBRWhenNoActivePod=$e")
             }
             handler.postDelayed(statusChecker, STATUS_CHECK_INTERVAL_MS)
+        }
+
+        autoDeacChecker = Runnable {
+            pollAutoDeac()
         }
     }
 
@@ -235,25 +247,104 @@ class OmnipodDashPumpPlugin @Inject constructor(
         return sp.getBoolean(R.string.key_omnipod_dash_preferences_deactivation_auto_dismiss, false)
     }
 
+
+    private fun timeLeftOnPod(forcedDeac: Boolean): Duration? {
+        val tsOnPod = podStateManager.time?.toLocalDateTime() ?: return null
+        val expiryTs = podStateManager.expiry?.toLocalDateTime() ?: return null
+        return if (forcedDeac) {
+            Duration.between(tsOnPod, expiryTs.plusHours(8))
+        } else {
+            Duration.between(tsOnPod, expiryTs)
+        }
+    }
+
+    private fun scheduleAutoDeac() {
+        if (!podStateManager.isPodRunning || !isAutoAlertDismissalOn()) {
+            this.autoDeacMode = AutoDeacMode.IDLE
+            return
+        }
+
+        val timeToExpiry = timeLeftOnPod(false) ?: return
+        if (timeToExpiry < Duration.ofMinutes(1) && timeToExpiry > Duration.ofMinutes(-2)) {
+            if (autoDeacMode == AutoDeacMode.IDLE && !lastDismissedPodWarning.isAfter(LocalDateTime.now().minusMinutes(5))) {
+                if (isAutoDeacDebugOn()) {
+                    this.notificationHandler("Going into poll mode for pod expiration.", "DEBUG Dash Alert")
+                }
+                this.autoDeacMode = AutoDeacMode.EXPIRY_POLLING
+                val pollTime = sp.getInt(R.string.key_omnipod_dash_preferences_deactivation_poll_time, 250).toLong()
+                handler.postDelayed(autoDeacChecker, pollTime)
+            }
+        } else if (timeToExpiry >= Duration.ofMinutes(1)) {
+            this.autoDeacMode = AutoDeacMode.IDLE
+        }
+    }
+
+    private fun pollAutoDeac() {
+        if (!podStateManager.isPodRunning || !isAutoAlertDismissalOn() || autoDeacMode == AutoDeacMode.IDLE || autoDeacMode == AutoDeacMode.PRE_DEAC) {
+            return
+        }
+
+        val timeToExpiry = timeLeftOnPod(false) ?: return
+        val pollTime = sp.getInt(R.string.key_omnipod_dash_preferences_deactivation_poll_time, 500).toLong()
+        var done = false
+
+        if (timeToExpiry >= Duration.ofSeconds(5) && timeToExpiry < Duration.ofMinutes(1)) {
+            // not quite time yet
+            handler.postDelayed(autoDeacChecker, pollTime)
+        } else if (timeToExpiry < Duration.ofSeconds(5) && timeToExpiry > Duration.ofMinutes(-5)) {
+            this.notificationHandler("Trying to dismiss Dash expiry alert...", "Dash Alert", true)
+
+            if (podStateManager.activeAlerts!!.size > 0) {
+                this.autoDeacMode = AutoDeacMode.EXPIRY_DISMISSUNG
+                if (isAutoDeacDebugOn()) {
+                    this.notificationHandler("Alert seen in poll cycle.", "DEBUG Dash Alert")
+                }
+                checkForAlertsToDismiss()
+            } else if (this.autoDeacMode == AutoDeacMode.EXPIRY_POLLING && commandQueue.size() == 0) {
+                if (isAutoDeacDebugOn()) {
+                    this.notificationHandler("Nothing in command queue. Polling via status check.", "DEBUG Dash Alert")
+                }
+                this.readStatus(rh.gs(R.string.requested_by_dash_deac), null)
+            }
+
+            if (lastDismissedPodWarning.isAfter(LocalDateTime.now().minusMinutes(5))) {
+                done = true
+            }
+        } else {
+            done = true
+        }
+
+        if (done) {
+            this.autoDeacMode = AutoDeacMode.PRE_DEAC
+
+            val mNotificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            mNotificationManager.cancel(Constants.omnipodDashOngNotificationID)
+        } else {
+            handler.postDelayed(autoDeacChecker, pollTime)
+        }
+    }
+
     private fun checkForAlertsToDismiss() {
         if (
             isAutoAlertDismissalOn()
             && podStateManager.isPodRunning
             && podStateManager.activeAlerts!!.size > 0
-            // && !commandQueue.isCustomCommandInQueue(CommandSilenceAlerts::class.java) TODO no need?
+            && !commandQueue.isCustomCommandInQueue(CommandSilenceAlerts::class.java)
         ) {
             val message = podStateManager.activeAlerts?.let { it ->
                 it.joinToString(System.lineSeparator()) { t -> translatedActiveAlert(t) }
             } ?: return
 
+            this.lastDismissedPodWarning = LocalDateTime.now()
+
             if (isAutoDeacDebugOn()) {
                 val bool = commandQueue.isCustomCommandInQueue(CommandSilenceAlerts::class.java)
                 val extra = if (bool) "(command silence in queue)" else "(command silence not in queue)"
-                this.notificationHandler("Would silence alert for: '${message}' ${extra}.", "DEBUG Dash Alert")
+                this.notificationHandler("Silenced alert for: '${message}' ${extra}.", "DEBUG Dash Alert")
             } else {
-                this.executeCustomCommand(CommandSilenceAlerts())
                 this.notificationHandler(message)
             }
+            this.executeCustomCommand(CommandSilenceAlerts())
         }
     }
 
@@ -279,18 +370,26 @@ class OmnipodDashPumpPlugin @Inject constructor(
         return rh.gs(id)
     }
 
-    private fun createNotificationChannel() {
+    private fun createNotificationChannels() {
         val mNotificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        @SuppressLint("WrongConstant") val channel = NotificationChannel(
+        @SuppressLint("WrongConstant") val mainChan = NotificationChannel(
             DASH_ALERT_NOTIF_CHAN,
             DASH_ALERT_NOTIF_CHAN,
             NotificationManager.IMPORTANCE_HIGH
         )
-        mNotificationManager.createNotificationChannel(channel)
+        mNotificationManager.createNotificationChannel(mainChan)
+
+        @SuppressLint("WrongConstant") val onGoingChan = NotificationChannel(
+            DASH_ONG_NOTIF_CHAN,
+            DASH_ONG_NOTIF_CHAN,
+            NotificationManager.IMPORTANCE_HIGH
+        )
+        mNotificationManager.createNotificationChannel(onGoingChan)
     }
 
-    private fun notificationHandler(text: String, title: String = "Dash Alert") {
-        val builder = NotificationCompat.Builder(context, DASH_ALERT_NOTIF_CHAN)
+    private fun notificationHandler(text: String, title: String = "Dash Alert", onGoing: Boolean = false) {
+        val channel = if (onGoing) DASH_ONG_NOTIF_CHAN else DASH_ALERT_NOTIF_CHAN
+        val builder = NotificationCompat.Builder(context, channel)
         builder
             .setSmallIcon(R.drawable.ic_pod_128)
             .setContentTitle(title)
@@ -300,8 +399,15 @@ class OmnipodDashPumpPlugin @Inject constructor(
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setVibrate(longArrayOf(0, 100, 50, 100, 50))
 
+            if (onGoing) {
+                builder
+                    .setOngoing(true)
+                    .setTimeoutAfter(30 * 60 * 1000)
+            }
+
         val mNotificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        mNotificationManager.notify(info.nightscout.androidaps.Constants.omnipodDashNotificationID, builder.build())
+        val id = if (onGoing) Constants.omnipodDashNotificationID else Constants.omnipodDashOngNotificationID
+        mNotificationManager.notify(id, builder.build())
     }
 
     override fun isInitialized(): Boolean {
@@ -557,7 +663,7 @@ class OmnipodDashPumpPlugin @Inject constructor(
 
     override fun onStart() {
         super.onStart()
-        createNotificationChannel()
+        createNotificationChannels()
         podStateManager.onStart()
         handler.postDelayed(statusChecker, STATUS_CHECK_INTERVAL_MS)
         disposables += rxBus

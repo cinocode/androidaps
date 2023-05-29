@@ -120,8 +120,8 @@
             android:selectAllOnFocus="true"
             android:singleLine="true"
             android:title="@string/omnipod_dash_preferences_deactivation_debug_poll_time"
-            validate:maxNumber="5000"
-            validate:minNumber="50"
+            validate:maxNumber="30000"
+            validate:minNumber="100"
             validate:testType="numericRange" />
 
         <SwitchPreference
