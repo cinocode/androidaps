@@ -1,11 +1,15 @@
 package info.nightscout.androidaps.queue
 
+import android.annotation.SuppressLint
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
 import android.os.SystemClock
 import android.text.Spanned
 import androidx.appcompat.app.AppCompatActivity
 import dagger.android.HasAndroidInjector
+import info.nightscout.androidaps.Constants
 import info.nightscout.androidaps.R
 import info.nightscout.androidaps.activities.BolusProgressHelperActivity
 import info.nightscout.androidaps.activities.ErrorHelperActivity
@@ -118,6 +122,17 @@ class CommandQueueImplementation @Inject constructor(
                                })
                            }
                        }, fabricPrivacy::logException)
+        createNotificationChannels()
+    }
+
+    private fun createNotificationChannels() {
+        val mNotificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        @SuppressLint("WrongConstant") val mainChan = NotificationChannel(
+            Constants.NOTIF_CHAN_ALARMS,
+            Constants.NOTIF_CHAN_ALARMS,
+            NotificationManager.IMPORTANCE_HIGH
+        )
+        mNotificationManager.createNotificationChannel(mainChan)
     }
 
     private fun executingNowError(): PumpEnactResult =

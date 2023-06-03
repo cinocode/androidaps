@@ -19,6 +19,8 @@ object Constants {
     const val REALLYHIGHCARBS = 1111111
     const val REALLYHIGHIOB = 1111111.0
     const val notificationID = 556677
+    const val notificationIDAlarm = 556680
+    const val NOTIF_CHAN_ALARMS = "AndroidAPS-Alarm"
 
     // SMS COMMUNICATOR
     const val remoteBolusMinDistance = 15 * 60 * 1000L
