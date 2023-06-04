@@ -47,6 +47,7 @@ class QueueThread internal constructor(
         var lastCommandTime: Long
         lastCommandTime = System.currentTimeMillis()
         var connectionStartTime = lastCommandTime
+        var retries = 0
         try {
             while (true) {
                 val secondsElapsed = (System.currentTimeMillis() - connectionStartTime) / 1000
@@ -87,6 +88,7 @@ class QueueThread internal constructor(
                         //rxBus.send(new EventNewNotification(notification));
                         lastCommandTime = System.currentTimeMillis()
                         connectionStartTime = lastCommandTime
+                        retries = 0
                         pump.connect("watchdog")
                     } else {
                         queue.clear()
@@ -104,6 +106,15 @@ class QueueThread internal constructor(
                     continue
                 }
                 if (pump.isConnecting()) {
+                    if ((secondsElapsed > 29 && retries == 0)
+                        || (secondsElapsed > 59 && retries == 1)
+                        || (secondsElapsed > 89 && retries == 2) ) {
+                        retries++
+
+                        pump.disconnect("Retry $retries")
+                        SystemClock.sleep(1000)
+                        pump.connect("Connection needed (Retry $retries)")
+                    }
                     aapsLogger.debug(LTag.PUMPQUEUE, "connecting $secondsElapsed")
                     rxBus.send(EventPumpStatusChanged(EventPumpStatusChanged.Status.CONNECTING, secondsElapsed.toInt()))
                     SystemClock.sleep(1000)
