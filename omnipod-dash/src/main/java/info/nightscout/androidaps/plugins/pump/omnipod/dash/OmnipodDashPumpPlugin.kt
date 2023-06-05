@@ -104,7 +104,6 @@ class OmnipodDashPumpPlugin @Inject constructor(
     private var autoDeacMode = AutoDeacMode.IDLE
     private var lastDismissedPodWarning: LocalDateTime = LocalDateTime.now().minusMinutes(5)
     private var nextPodWarningCheck: Long = 0
-    private var nextPodRegularRefresh: Long = 0
     @Volatile var stopConnecting: CountDownLatch? = null
     private var disposables: CompositeDisposable = CompositeDisposable()
 
@@ -219,8 +218,6 @@ class OmnipodDashPumpPlugin @Inject constructor(
         ) {
             if (podStateManager.activeCommand != null) {
                 this.readStatus(rh.gs(R.string.unconfirmed_command), null)
-            // } else if (System.currentTimeMillis() > nextPodRegularRefresh) { TODO does this help any?
-                // this.readStatus(rh.gs(R.string.requested_15min_cron), null)
             }
         }
     }
@@ -229,7 +226,6 @@ class OmnipodDashPumpPlugin @Inject constructor(
         commandQueue.readStatus(reason, object : Callback() {
             override fun run() {
                 if (result.success) {
-                    nextPodRegularRefresh = DateTimeUtil.getTimeInFutureFromMinutes(15)
                     checkForAlertsToDismiss()
                 }
 
@@ -406,7 +402,7 @@ class OmnipodDashPumpPlugin @Inject constructor(
             }
 
         val mNotificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        val id = if (onGoing) Constants.omnipodDashNotificationID else Constants.omnipodDashOngNotificationID
+        val id = if (onGoing) Constants.omnipodDashOngNotificationID else Constants.omnipodDashNotificationID
         mNotificationManager.notify(id, builder.build())
     }
 
