@@ -245,12 +245,10 @@ class OmnipodDashPumpPlugin @Inject constructor(
 
 
     private fun timeLeftOnPod(forcedDeac: Boolean): Duration? {
-        val tsOnPod = podStateManager.time?.toLocalDateTime() ?: return null
-        val expiryTs = podStateManager.expiry?.toLocalDateTime() ?: return null
         return if (forcedDeac) {
-            Duration.between(tsOnPod, expiryTs.plusHours(8))
+            Duration.between(ZonedDateTime.now(), podStateManager.expiry?.plusHours(8) ?: return null)
         } else {
-            Duration.between(tsOnPod, expiryTs)
+            Duration.between(ZonedDateTime.now(), podStateManager.expiry ?: return null)
         }
     }
 
