@@ -103,6 +103,7 @@ class OmnipodDashPumpPlugin @Inject constructor(
     private var autoDeacChecker: Runnable
     private var autoDeacMode = AutoDeacMode.IDLE
     private var lastDismissedPodWarning: LocalDateTime = LocalDateTime.now().minusMinutes(5)
+    private var lastStatusCheck: LocalDateTime = LocalDateTime.now()
     private var nextPodWarningCheck: Long = 0
     @Volatile var stopConnecting: CountDownLatch? = null
     private var disposables: CompositeDisposable = CompositeDisposable()
@@ -223,6 +224,7 @@ class OmnipodDashPumpPlugin @Inject constructor(
     }
 
     fun readStatus(reason: String, callback: Callback?) {
+        this.lastStatusCheck = LocalDateTime.now()
         commandQueue.readStatus(reason, object : Callback() {
             override fun run() {
                 if (result.success) {
@@ -445,6 +447,9 @@ class OmnipodDashPumpPlugin @Inject constructor(
             }
             val stop = CountDownLatch(1)
             stopConnecting = stop
+        }
+        if (lastStatusCheck.isBefore(LocalDateTime.now().minusMinutes(5L))) {
+            this.readStatus("Check status on connect every 5 min", null)
         }
         thread(
             start = true,
