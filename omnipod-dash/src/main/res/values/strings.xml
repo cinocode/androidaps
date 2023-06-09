@@ -45,7 +45,7 @@
     <string name="key_omnipod_dash_preferences_deactivation_auto_deactivate_pod_minutes" translatable="false">key_omnipod_dash_preferences_deactivation_auto_deactivate_pod_minutes</string>
     <string name="omnipod_dash_preferences_category_deactivation">Auto Deactivation</string>
     <string name="omnipod_dash_preferences_deactivation_debug">Debug</string>
-    <string name="omnipod_dash_preferences_deactivation_debug_summary">Do nothing automatically - send verbose information via notifications explaining this sections behaviour.</string>
+    <string name="omnipod_dash_preferences_deactivation_debug_summary">Give verbose output on dismissal/deactivation steps. Do not deactivate pod automatically.</string>
     <string name="omnipod_dash_preferences_deactivation_debug_poll_time">Poll time</string>
     <string name="omnipod_dash_preferences_deactivation_debug_poll_time_summary">How often to poll for pending alerts or deactivation in ms</string>
     <string name="omnipod_dash_preferences_deactivation_auto_dismiss">Auto dismiss deactivation alerts</string>
