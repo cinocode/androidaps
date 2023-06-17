@@ -208,8 +208,53 @@ class DetermineBasalAdapterSMBJS internal constructor(private val scriptReader: 
         this.profile.put("allowSMB_with_high_temptarget", smbEnabled && sp.getBoolean(R.string.key_allowSMB_with_high_temptarget, false))
         this.profile.put("enableSMB_always", smbEnabled && sp.getBoolean(R.string.key_enableSMB_always, false) && advancedFiltering)
         this.profile.put("enableSMB_after_carbs", smbEnabled && sp.getBoolean(R.string.key_enableSMB_after_carbs, false) && advancedFiltering)
-        this.profile.put("maxSMBBasalMinutes", sp.getInt(R.string.key_smbmaxminutes, SMBDefaults.maxSMBBasalMinutes))
-        this.profile.put("maxUAMSMBBasalMinutes", sp.getInt(R.string.key_uamsmbmaxminutes, SMBDefaults.maxUAMSMBBasalMinutes))
+
+        val dynSmbEnabled = sp.getBoolean(R.string.key_use_dyn_smb, false)
+        var dynSmb = sp.getInt(R.string.key_smbmaxminutes, SMBDefaults.maxSMBBasalMinutes)
+        var dynSmbUam = sp.getInt(R.string.key_uamsmbmaxminutes, SMBDefaults.maxUAMSMBBasalMinutes)
+        if (dynSmbEnabled) {
+            try {
+                if (glucoseStatus.glucose > 160) {
+                    dynSmb += 5
+                    dynSmbUam += 5
+                }
+                if (glucoseStatus.glucose > 170) {
+                    dynSmb += 5
+                    dynSmbUam += 5
+                }
+                if (glucoseStatus.glucose > 180) {
+                    dynSmb += 5
+                    dynSmbUam += 5
+                }
+                if (targetBg <= 120) {
+                    if (glucoseStatus.glucose >= 100 && mealData.carbs > 50) {
+                        dynSmb += 15
+                    }
+                    if (glucoseStatus.glucose >= 110 && mealData.carbs > 75) {
+                        dynSmb += 15
+                    }
+                    if (glucoseStatus.glucose >= 120 && mealData.carbs > 100) {
+                        dynSmb += 15
+                    }
+                    if (glucoseStatus.glucose >= 130 && mealData.carbs > 125) {
+                        dynSmb += 15
+                    }
+                    if (glucoseStatus.glucose >= 140 && mealData.carbs > 150) {
+                        dynSmb += 15
+                    }
+                    if (glucoseStatus.glucose >= 150 && mealData.carbs > 175) {
+                        dynSmb += 15
+                    }
+                }
+                dynSmb = dynSmb.coerceAtMost(120)
+                dynSmbUam = dynSmbUam.coerceAtMost(120)
+            } catch (ex: Exception) {
+                // failsafe
+            }
+        }
+
+        this.profile.put("maxSMBBasalMinutes", dynSmb)
+        this.profile.put("maxUAMSMBBasalMinutes", dynSmbUam)
         //set the min SMB amount to be the amount set by the pump.
         this.profile.put("bolus_increment", pumpBolusStep)
         this.profile.put("carbsReqThreshold", sp.getInt(R.string.key_carbsReqThreshold, SMBDefaults.carbsReqThreshold))

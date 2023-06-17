@@ -117,7 +117,7 @@
             android:key="@string/key_smbmaxminutes"
             android:title="@string/smbmaxminutes_summary"
             validate:maxNumber="120"
-            validate:minNumber="15"
+            validate:minNumber="16"
             validate:testType="numericRange" />
 
         <info.nightscout.androidaps.utils.textValidator.ValidatingEditTextPreference
@@ -133,6 +133,12 @@
             validate:maxNumber="120"
             validate:minNumber="15"
             validate:testType="numericRange" />
+
+        <SwitchPreference
+            android:defaultValue="false"
+            android:key="@string/key_use_dyn_smb"
+            android:summary="@string/enabledynsmb_summary"
+            android:title="@string/enabledynsmb" />
 
         <SwitchPreference
             android:defaultValue="false"
